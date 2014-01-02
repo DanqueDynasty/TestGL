@@ -12,6 +12,12 @@ using namespace std;
 SDL_Window* mWindow = NULL;
 SDL_GLContext mContext = NULL;
 
+const float X_DELTA = 0.1f;
+const unsigned int NUM_OF_VERTICES_PER_TRI = 3;
+const unsigned int NUM_FLOATS_PER_VERTICE = 6;
+const unsigned int TRIANGLE_BYTE_SIZE = NUM_OF_VERTICES_PER_TRI * NUM_FLOATS_PER_VERTICE * sizeof(float);
+unsigned int numTris = 0;
+
 bool init()//init OpenGL
 {
     bool success = true;
@@ -154,7 +160,7 @@ void genObjects()
     GLuint myBufferID; //Buffer Object
     glGenBuffers(1, &myBufferID);//generate the buffer
     glBindBuffer(GL_ARRAY_BUFFER, myBufferID);//bind the attributes to the buffer, specify this is an array
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);//pass the vertex data to the buffer
+    glBufferData(GL_ARRAY_BUFFER, 10000, NULL, GL_STATIC_DRAW);//pass the vertex data to the buffer
     glEnableVertexAttribArray(0); // position
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, 0);//parse for position
     glEnableVertexAttribArray(1); // color
@@ -167,6 +173,25 @@ void genObjects()
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
      
 }
+
+void genNewTriangle()
+{
+    const GLfloat THIS_TRI_X = -1 + numTris * X_DELTA;
+    
+    GLfloat thisTri[] = {
+        THIS_TRI_X, 1.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+        
+        THIS_TRI_X + X_DELTA, 1.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+        
+        THIS_TRI_X, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f
+    };
+    glBufferSubData(GL_ARRAY_BUFFER, numTris * TRIANGLE_BYTE_SIZE, TRIANGLE_BYTE_SIZE, thisTri);
+    numTris++;
+}
+
 void render()
 {
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -178,7 +203,10 @@ void render()
     SDL_GetWindowSize(mWindow, &x, &y);
     glViewport(0, 0, x, y);//specify how we handle the viewport.
     //glDrawArrays(GL_TRIANGLES, 0, 6);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+    //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+    genNewTriangle();
+    
+    glDrawArrays(GL_TRIANGLES, (numTris-1) * NUM_OF_VERTICES_PER_TRI, NUM_OF_VERTICES_PER_TRI);
     
     SDL_GL_SwapWindow(mWindow);
 }
