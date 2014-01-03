@@ -3,47 +3,45 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 #include <iostream>
-#include <string>
 #include <fstream>
-#include <cstdio>
+#include <string>
 
 using namespace std;
 
 SDL_Window* mWindow = NULL;
 SDL_GLContext mContext = NULL;
 
-bool init()//init OpenGL
+bool init()
 {
     bool success = true;
     if(SDL_Init(SDL_INIT_EVERYTHING) == -1)
     {
-        cout << "Error Failed to Load SDL!" << endl;
+        cout << "Error: Failed to load SDL!" << endl;
         success = false;
     }else{
-        //set Version to 3.3
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
         
-        mWindow = SDL_CreateWindow("OpenGL Test", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+        mWindow = SDL_CreateWindow("OpenGL Test", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1024, 768, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+        
         if(mWindow == NULL)
         {
-            cout << "Failed to init Window!" << endl;
+            cout << "Error: Failed to load Window!" << endl;
             success = false;
         }else{
             mContext = SDL_GL_CreateContext(mWindow);
             if(mContext == NULL)
             {
-                cout << "Failed to init context!" << endl;
+                cout << "Error Failed to create Context!" << endl;
                 success = false;
             }else{
-                //init Glew
                 glewExperimental = GL_TRUE;
                 glewInit();
             }
         }
     }
-    
+    return success;
 }
 
 string loadShaderCode(const char* fileName)
@@ -51,10 +49,9 @@ string loadShaderCode(const char* fileName)
     ifstream input(fileName);
     if(!input.good())
     {
-        cout << "FileFailed to load... " << fileName << endl;
+        cout << "Failed to load: " << fileName << endl;
     }
-    return std::string(std::istreambuf_iterator<char>(input),
-                       std::istreambuf_iterator<char>());
+    return std::string(std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>());
 }
 
 bool checkShaderStatus(GLuint shaderID)
@@ -65,15 +62,15 @@ bool checkShaderStatus(GLuint shaderID)
     {
         GLint infoLogLength;
         glGetShaderiv(shaderID, GL_INFO_LOG_LENGTH, &infoLogLength);
-        GLchar* buffer = new GLchar[infoLogLength];
         
+        GLchar* buffer = new GLchar[infoLogLength];
         GLsizei bufferSize;
         glGetShaderInfoLog(shaderID, infoLogLength, &bufferSize, buffer);
         
-        cout << "Shader Error: " << buffer << endl;
+        cout << "Shader Compile Error: " << buffer << endl;
         
         delete buffer;
-        return false;
+        return false;  
     }
     return true;
 }
@@ -86,136 +83,114 @@ bool checkProgramStatus(GLuint programID)
     {
         GLint infoLogLength;
         glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &infoLogLength);
-        
         GLchar* buffer = new GLchar[infoLogLength];
         GLsizei bufferSize;
         glGetProgramInfoLog(programID, infoLogLength, &bufferSize, buffer);
-        cout << "Program error: " << buffer << endl;
         
-        delete buffer;
+        cout << "Program Error: " << buffer << endl;
         
+        delete buffer;  
         return false;
     }
     return true;
 }
 
 void genShaders(){
-   GLuint vertexShaderID = glCreateShader(GL_VERTEX_SHADER); //position
-   GLuint fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER); // color
-   
-   const char* adapter[1];
-   string temp = loadShaderCode("./Shader/Vertex.vsh");
-   adapter[0] = temp.c_str();
-   glShaderSource(vertexShaderID, 1, adapter, 0 );
-   
-   temp = loadShaderCode("./Shader/Fragment.fsh");
-   adapter[0] = temp.c_str();
-   glShaderSource(fragmentShaderID, 1, adapter, 0);
-   
-   glCompileShader(vertexShaderID);
-   glCompileShader(fragmentShaderID);
-   
-   if(!checkShaderStatus(vertexShaderID) || !checkShaderStatus(fragmentShaderID))
-   {
-       return;
-   }
-   
-   GLuint programID = glCreateProgram();
-   glAttachShader(programID, vertexShaderID);
-   glAttachShader(programID, fragmentShaderID);
-   glLinkProgram(programID);
-   
-   if(!checkProgramStatus(programID));
-   
-   glUseProgram(programID);
+    GLuint vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
+    GLuint fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+    
+    const char* adapter[1];
+    string temp = loadShaderCode("./Shader/Vertex.vsh");
+    adapter[0] = temp.c_str();
+    glShaderSource(vertexShaderID, 1, adapter, 0);
+    
+    temp = loadShaderCode("./Shader/Fragment.fsh");
+    adapter[0] = temp.c_str();
+    glShaderSource(fragmentShaderID, 1, adapter, 0);
+    
+    glCompileShader(vertexShaderID);
+    glCompileShader(fragmentShaderID);
+    
+    if(!checkShaderStatus(vertexShaderID) || !checkShaderStatus(fragmentShaderID))
+    {
+        return;
+    }
+    
+    GLuint programID = glCreateProgram();
+    glAttachShader(programID, vertexShaderID);
+    glAttachShader(programID, fragmentShaderID);
+    glLinkProgram(programID);
+    if(!checkProgramStatus(programID))
+    {
+        return;
+    }
+    
+    glUseProgram(programID);
 }
 
 void genObjects()
 {
-    const float RED_TRIANGLE_Z = 0.5;
-    const float BLUE_TRIANGLE_Z = -0.5f;
-    GLfloat verts[] =
-    {
-        0.0f, 1.0f, -1.0, //0
+    const float TRI_Z = 0.5;
+    GLfloat verts[] = {
+        0.0f, 1.0f, TRI_Z,
         1.0f, 0.0f, 0.0f,
-        -1.0f, -1.0f, RED_TRIANGLE_Z,//1
+        -1.0f, -1.0f, TRI_Z,
         0.0f, 1.0f, 0.0f,
-        1.0f, -1.0f, RED_TRIANGLE_Z,//2
-        0.0f, 0.0f, 1.0f,
-        
-        -1.0f, 1.0f, BLUE_TRIANGLE_Z,//3
-        0.0f, 0.0f, 1.0f,
-        1.0f, 1.0f, BLUE_TRIANGLE_Z, //4
-        0.0f, 1.0f, 0.0f,
-        0.0f, -1.0f, BLUE_TRIANGLE_Z, //5
-        1.0f, 0.0f, 0.0f    
+        1.0f, -1.0f, TRI_Z,
+        0.0f, 0.0f, 1.0f
     };
     
-    GLuint myBufferID; //Buffer Object
-    glGenBuffers(1, &myBufferID);//generate the buffer
-    glBindBuffer(GL_ARRAY_BUFFER, myBufferID);//bind the attributes to the buffer, specify this is an array
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);//pass the vertex data to the buffer
-    glEnableVertexAttribArray(0); // position
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, 0);//parse for position
-    glEnableVertexAttribArray(1); // color
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, (char*)(sizeof(float)*3));//parse for color
-    
-    GLushort indices[] = {0,1,2, 5,3,4};//specifies which row of vertices to use
-    GLuint indexBufferID;
-    glGenBuffers(1, &indexBufferID);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-     
+    GLuint myBufferID;
+    glGenBuffers(1, &myBufferID);
+    glBindBuffer(GL_ARRAY_BUFFER, myBufferID);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, 0 );
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, (char*)(sizeof(float)*3));
 }
+
 void render()
 {
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
-    glEnable(GL_DEPTH_TEST);
-    //render code here
-    int x, y;
-    SDL_GetWindowSize(mWindow, &x, &y);
-    glViewport(0, 0, x, y);//specify how we handle the viewport.
-    //glDrawArrays(GL_TRIANGLES, 0, 6);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
+    int w, h;
+    SDL_GetWindowSize(mWindow, &w, &h);
+    
+    glViewport(0, 0, w, h);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
     
     SDL_GL_SwapWindow(mWindow);
 }
 
 void cleanup()
 {
-    SDL_GL_DeleteContext(mContext);
     SDL_DestroyWindow(mWindow);
+    SDL_GL_DeleteContext(mContext);
     mWindow = NULL;
     mContext = NULL;
-    SDL_Quit;
+    SDL_Quit();
 }
 
-int main(int argc, char** argv) {
-
-    bool isRunning = true;
-    SDL_Event event;
-    
+int main(int argc, char** argv)
+{
+    bool running = true;
+    SDL_Event e;
     init();
     genObjects();
     genShaders();
-    while(isRunning)
+    while(running)
     {
-        //handle input
-        while(SDL_PollEvent(&event))
+        while(SDL_PollEvent(&e))
         {
-            if(event.type == SDL_QUIT)
+            if(e.type == SDL_QUIT)
             {
-                isRunning = false;
+                running = false;
             }
         }
-        //handle draw
         render();
     }
-    
     cleanup();
-    
     return 0;
 }
-
